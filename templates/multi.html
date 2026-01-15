@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多选项市场查询 - Polymarket Trade Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='url(%23g)'/%3E%3Crect x='6' y='18' width='4' height='8' rx='1' fill='white' opacity='0.9'/%3E%3Crect x='14' y='12' width='4' height='14' rx='1' fill='white' opacity='0.9'/%3E%3Crect x='22' y='6' width='4' height='20' rx='1' fill='white' opacity='0.9'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        dark: {
+                            900: '#0f0f23',
+                            800: '#1a1a2e',
+                            700: '#252542',
+                            600: '#2d2d4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* 页面遮罩过渡 */
+        .page-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .overlay-enter { animation: overlayIn 0.1s ease-out forwards; }
+        .overlay-exit { animation: overlayOut 0.15s ease-out forwards; }
+        @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes overlayOut { from { opacity: 1; } to { opacity: 0; } }
+        /* 下拉菜单动画 */
+        .mobile-menu-enter { animation: slideDown 0.25s ease-out; }
+        .mobile-menu-exit { animation: slideUp 0.2s ease-out forwards; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+        /* 卡片折叠动画 */
+        .card-body { transition: max-height 0.3s ease-out, opacity 0.2s ease-out, padding 0.3s ease-out; overflow: hidden; }
+        .card-body.collapsed { max-height: 0 !important; opacity: 0; padding-top: 0 !important; padding-bottom: 0 !important; }
+        .card-toggle-icon { transition: transform 0.2s ease-out; }
+        .card-toggle-icon.collapsed { transform: rotate(-90deg); }
+        /* 表头固定 */
+        .sticky-header { position: sticky; top: 0; z-index: 10; }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-white">
+    <!-- 页面过渡遮罩 -->
+    <div id="pageOverlay" class="page-overlay overlay-exit"></div>
+
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-[100px]"></div>
+        <div class="absolute top-1/2 -left-40 w-80 h-80 bg-secondary/20 rounded-full blur-[100px]"></div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
+        <div class="px-6 md:px-10 h-14 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <svg class="w-6 h-6 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span class="font-semibold text-white hidden sm:inline">Polymarket Trade Tracker</span>
+            </a>
+            <div class="flex items-center gap-2 md:gap-4">
+                <div class="hidden md:flex items-center gap-2">
+                    <a href="/simple" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <span data-i18n="nav_quick_query">快速查询</span>
+                    </a>
+                    <a href="/multi" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white bg-secondary/30 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                        <span data-i18n="nav_multi_query">多选项市场查询</span>
+                    </a>
+                    <button id="langToggle" onclick="toggleLang()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                        <span id="langText">中文</span>
+                    </button>
+                </div>
+                <a href="https://x.com/leolopeleo" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors" title="Twitter">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </a>
+                <button onclick="toggleMobileMenu()" class="md:hidden text-gray-400 hover:text-white transition-colors p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobileMenu" class="hidden md:hidden">
+            <div class="px-4 py-3 space-y-1 flex flex-col items-end">
+                <a href="/simple" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span data-i18n="nav_quick_query">快速查询</span>
+                </a>
+                <a href="/multi" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white bg-secondary/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    <span data-i18n="nav_multi_query">多选项市场查询</span>
+                </a>
+                <button onclick="toggleLang()" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                    <span id="langTextMobile">中文</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 py-8 pt-24">
+        <!-- 标题 -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">
+                <span class="gradient-text" data-i18n="multi_title">多选项市场查询</span>
+            </h1>
+            <p class="text-gray-400" data-i18n="multi_subtitle">通过市场 URL 查询包含多个子选项的市场，选择具体子市场进行分析。</p>
+        </header>
+
+        <!-- 错误提示 -->
+        <div id="errorMessage" class="hidden mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-center"></div>
+
+        <!-- ==================== 卡片 1：输入信息 ==================== -->
+        <div class="glass rounded-2xl mb-6 overflow-hidden" id="card-1">
+            <div class="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleCard(1)">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold" data-i18n="multi_input_title">输入信息</h2>
+                    <span id="card1-summary" class="text-sm text-gray-500 hidden"></span>
+                </div>
+                <svg id="card1-icon" class="w-5 h-5 text-gray-400 card-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+            <div class="card-body px-8 pb-8" id="card-body-1">
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            <span data-i18n="multi_url_label">市场 URL</span>
+                        </label>
+                        <input type="text" id="eventUrl"
+                               placeholder="例如: https://polymarket.com/event/..."
+                               data-i18n-placeholder="multi_url_placeholder"
+                               class="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                            <span data-i18n="multi_wallet_label">钱包地址</span>
+                        </label>
+                        <input type="text" id="address"
+                               placeholder="0x..."
+                               data-i18n-placeholder="multi_wallet_placeholder"
+                               class="w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono">
+                    </div>
+                </div>
+                <button id="fetchMarketsBtn" onclick="fetchMarkets()"
+                        class="w-full py-3 px-6 bg-gradient-to-r from-primary to-secondary rounded-xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span data-i18n="multi_btn_fetch">获取子市场列表</span>
+                </button>
+                <p class="mt-3 text-center text-sm text-gray-500" data-i18n="multi_hint">输入市场 URL 和钱包地址，获取该用户在此事件下的所有交易市场</p>
+            </div>
+        </div>
+
+        <!-- ==================== 卡片 2：链上操作记录 ==================== -->
+        <div class="glass rounded-2xl mb-6 overflow-hidden hidden" id="card-2">
+            <div class="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleCard(2)">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold" data-i18n="multi_chain_title">链上操作记录</h2>
+                    <span id="card2-summary" class="text-sm text-gray-500 hidden"></span>
+                </div>
+                <svg id="card2-icon" class="w-5 h-5 text-gray-400 card-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+            <div class="card-body px-8 pb-8" id="card-body-2">
+                <div id="chainEventsContent">
+                    <!-- 动态填充：loading / 有数据 / 无数据 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 卡片 3：选择子市场 ==================== -->
+        <div class="glass rounded-2xl mb-6 overflow-hidden hidden" id="card-3">
+            <div class="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleCard(3)">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold" data-i18n="multi_select_title">选择要分析的子市场</h2>
+                    <span id="card3-summary" class="text-sm text-gray-500 hidden"></span>
+                </div>
+                <svg id="card3-icon" class="w-5 h-5 text-gray-400 card-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+            <div class="card-body px-8 pb-8" id="card-body-3">
+                <div id="eventTitle" class="text-gray-400 text-sm mb-4"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <button onclick="selectAllMarkets()" class="text-sm text-primary hover:underline" data-i18n="multi_select_all">全选</button>
+                    <button onclick="deselectAllMarkets()" class="text-sm text-gray-400 hover:text-white" data-i18n="multi_deselect_all">取消全选</button>
+                    <span id="selectedCount" class="text-sm text-gray-500 ml-auto">已选择 0 个</span>
+                </div>
+                <div id="marketsList" class="space-y-3 max-h-80 overflow-y-auto mb-6">
+                    <!-- 动态填充 -->
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="goBackStep1()" class="px-6 py-3 border border-dark-600 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all" data-i18n="multi_btn_back">
+                        返回修改
+                    </button>
+                    <button id="analyzeBtn" onclick="startBatchAnalysis()" disabled
+                            class="flex-1 py-3 px-6 bg-gradient-to-r from-primary to-secondary rounded-xl font-semibold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="multi_btn_analyze">
+                        开始分析
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 分析进度区域 ==================== -->
+        <div id="progressSection" class="hidden glass rounded-xl p-4 mb-6">
+            <div id="batchProgressInfo" class="text-sm text-gray-400 mb-2"></div>
+            <div class="flex items-center gap-3">
+                <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                    <div id="progressFill" class="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <button id="cancelBtn" onclick="cancelBatchAnalysis()" class="px-3 py-1 text-sm text-red-400 hover:text-red-300 transition-colors" data-i18n="multi_btn_cancel">
+                    取消
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 分析结果区域 ==================== -->
+        <div id="resultSection" class="hidden">
+            <div id="resultContent" class="space-y-8">
+                <!-- 动态填充每个市场的结果卡片 -->
+            </div>
+            <div class="mt-8 flex gap-4">
+                <button onclick="resetAll()" class="flex-1 py-3 px-6 border border-dark-600 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all" data-i18n="multi_btn_reset">
+                    重新查询
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/i18n.js"></script>
+    <script>
+        // ==================== 状态变量 ====================
+        let selectedMarkets = [];
+        let currentTaskId = null;
+        let pollInterval = null;
+        let marketsData = [];
+        let batchResults = [];
+        let currentBatchIndex = 0;
+        let isCancelled = false;
+        let currentEventUrl = '';
+        let currentEventSlug = '';
+        let chainEventsLoaded = false;
+
+        // ==================== 卡片折叠逻辑 ====================
+        function toggleCard(cardId) {
+            const body = document.getElementById(`card-body-${cardId}`);
+            const icon = document.getElementById(`card${cardId}-icon`);
+            const summary = document.getElementById(`card${cardId}-summary`);
+            
+            if (body.classList.contains('collapsed')) {
+                expandCard(cardId);
+            } else {
+                collapseCard(cardId);
+            }
+        }
+
+        function collapseCard(cardId) {
+            const body = document.getElementById(`card-body-${cardId}`);
+            const icon = document.getElementById(`card${cardId}-icon`);
+            const summary = document.getElementById(`card${cardId}-summary`);
+            
+            body.classList.add('collapsed');
+            icon.classList.add('collapsed');
+            if (summary) summary.classList.remove('hidden');
+        }
+
+        function expandCard(cardId) {
+            const body = document.getElementById(`card-body-${cardId}`);
+            const icon = document.getElementById(`card${cardId}-icon`);
+            const summary = document.getElementById(`card${cardId}-summary`);
+            
+            body.classList.remove('collapsed');
+            icon.classList.remove('collapsed');
+            if (summary) summary.classList.add('hidden');
+        }
+
+        function showCard(cardId) {
+            document.getElementById(`card-${cardId}`).classList.remove('hidden');
+        }
+
+        function hideCard(cardId) {
+            document.getElementById(`card-${cardId}`).classList.add('hidden');
+        }
+
+        // ==================== 工具函数 ====================
+        function clearPreviousResults() {
+            // 隐藏结果区域（但不清空内容，保留之前的结果）
+            document.getElementById('resultSection').classList.add('hidden');
+            
+            // 隐藏进度区域
+            document.getElementById('progressSection').classList.add('hidden');
+            
+            // 隐藏并重置卡片2（链上操作记录）
+            hideCard(2);
+            document.getElementById('chainEventsContent').innerHTML = '';
+            document.getElementById('card2-summary').textContent = '';
+            document.getElementById('card2-summary').classList.add('hidden');
+            expandCard(2);
+            
+            // 隐藏并重置卡片3（子市场列表）
+            hideCard(3);
+            document.getElementById('marketsList').innerHTML = '';
+            document.getElementById('card3-summary').textContent = '';
+            document.getElementById('card3-summary').classList.add('hidden');
+            expandCard(3);
+            
+            // 重置状态变量
+            marketsData = [];
+            selectedMarkets = [];
+            batchResults = [];
+            chainEventsLoaded = false;
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            setTimeout(() => errorEl.classList.add('hidden'), 5000);
+        }
+
+        function formatNumber(num, prefix = '') {
+            const absNum = Math.abs(num);
+            if (absNum >= 1000000) return prefix + (num / 1000000).toFixed(2) + 'M';
+            if (absNum >= 1000) return prefix + (num / 1000).toFixed(2) + 'K';
+            return prefix + num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // ==================== 获取子市场列表 ====================
+        async function fetchMarkets() {
+            const eventUrl = document.getElementById('eventUrl').value.trim();
+            const address = document.getElementById('address').value.trim();
+
+            if (!eventUrl) { showError(t('error_no_url')); return; }
+            if (!address || !address.startsWith('0x') || address.length !== 42) {
+                showError(t('error_invalid_wallet')); return;
+            }
+
+            // 清空之前的查询结果
+            clearPreviousResults();
+
+            const btn = document.getElementById('fetchMarketsBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg><span>${getLang() === 'en' ? 'Fetching...' : '获取中...'}</span>`;
+
+            try {
+                const response = await fetch('/api/multi/markets', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: eventUrl, address: address})
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    resetFetchBtn();
+                    return;
+                }
+
+                // 保存数据
+                marketsData = data.markets;
+                selectedMarkets = [];
+                currentEventUrl = eventUrl;
+                currentEventSlug = data.event_slug || '';
+                chainEventsLoaded = false;
+
+                // 更新卡片1摘要并折叠
+                const shortAddr = `${address.slice(0,6)}...${address.slice(-4)}`;
+                document.getElementById('card1-summary').textContent = shortAddr;
+                collapseCard(1);
+
+                // 显示卡片2（loading状态）
+                showCard(2);
+                showChainEventsLoading();
+
+                // 显示卡片3（子市场列表）
+                showCard(3);
+                renderMarketsList(data.event_title);
+                expandCard(3);
+
+                // 异步加载链上事件
+                fetchChainEvents(eventUrl, address);
+
+            } catch (e) {
+                showError(t('error_fetch_failed') + ': ' + e.message);
+            }
+
+            resetFetchBtn();
+        }
+
+        function resetFetchBtn() {
+            const btn = document.getElementById('fetchMarketsBtn');
+            btn.disabled = false;
+            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><span data-i18n="multi_btn_fetch">${t('multi_btn_fetch')}</span>`;
+        }
+
+        // ==================== 链上事件卡片 ====================
+        function showChainEventsLoading() {
+            const content = document.getElementById('chainEventsContent');
+            content.innerHTML = `
+                <div class="flex items-center gap-3 text-gray-400">
+                    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>${getLang() === 'zh' ? '正在查询链上操作...' : 'Loading on-chain operations...'}</span>
+                </div>
+            `;
+            // 设置卡片2折叠摘要为加载状态
+            setCard2LoadingSummary();
+        }
+        
+        function setCard2LoadingSummary() {
+            const summary = document.getElementById('card2-summary');
+            summary.innerHTML = `
+                <svg class="w-3 h-3 animate-spin inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                ${getLang() === 'zh' ? '正在查询...' : 'Loading...'}
+            `;
+        }
+
+        async function fetchChainEvents(eventUrl, address) {
+            try {
+                const response = await fetch('/api/multi/chain-events', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: eventUrl, address: address})
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    showChainEventsError(data.error);
+                    return;
+                }
+
+                const chainEvents = data.chain_events || {};
+                const totalEvents = (chainEvents.split || 0) + (chainEvents.merge || 0) + 
+                                   (chainEvents.redeem || 0) + (chainEvents.convert || 0);
+
+                if (totalEvents === 0) {
+                    showChainEventsEmpty();
+                } else {
+                    showChainEventsData(chainEvents);
+                    // 有数据时自动折叠
+                    document.getElementById('card2-summary').textContent = 
+                        `Split: ${chainEvents.split || 0}, Merge: ${chainEvents.merge || 0}, Redeem: ${chainEvents.redeem || 0}`;
+                    collapseCard(2);
+                }
+
+                // 添加额外市场到列表
+                const extraMarkets = data.extra_markets || [];
+                if (extraMarkets.length > 0) {
+                    addExtraMarkets(extraMarkets);
+                }
+
+                // 移除占位项，清除卡片3加载状态
+                removePlaceholder();
+                clearCard3LoadingSummary();
+                chainEventsLoaded = true;
+
+            } catch (e) {
+                showChainEventsError(e.message);
+                removePlaceholder();
+                clearCard3LoadingSummary();
+            }
+        }
+
+        function showChainEventsEmpty() {
+            const content = document.getElementById('chainEventsContent');
+            content.innerHTML = `
+                <div class="text-gray-500">
+                    ${getLang() === 'zh' ? '该用户在此事件中没有 Split/Merge/Redeem/neg-risk 操作' : 'No Split/Merge/Redeem/neg-risk operations in this event'}
+                </div>
+            `;
+        }
+
+        function showChainEventsError(error) {
+            const content = document.getElementById('chainEventsContent');
+            content.innerHTML = `<div class="text-red-400">${getLang() === 'zh' ? '查询失败: ' : 'Query failed: '}${error}</div>`;
+        }
+
+        function showChainEventsData(chainEvents) {
+            const content = document.getElementById('chainEventsContent');
+            const events = chainEvents.events || [];
+            
+            let html = `<div class="flex flex-wrap gap-3 mb-4">`;
+            if (chainEvents.split > 0) html += `<span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm">${getLang() === 'zh' ? '拆分' : 'Split'}: ${chainEvents.split}</span>`;
+            if (chainEvents.merge > 0) html += `<span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">${getLang() === 'zh' ? '合并' : 'Merge'}: ${chainEvents.merge}</span>`;
+            if (chainEvents.redeem > 0) html += `<span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm">${getLang() === 'zh' ? '赎回' : 'Redeem'}: ${chainEvents.redeem}</span>`;
+            if (chainEvents.convert > 0) html += `<span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-sm">${getLang() === 'zh' ? '转换' : 'Convert'}: ${chainEvents.convert}</span>`;
+            html += `</div>`;
+
+            // 直接显示详情表格，不需要额外的展开/收起按钮（卡片本身已可折叠）
+            if (events.length > 0) {
+                html += `
+                    <div class="max-h-48 overflow-y-auto bg-dark-800 rounded-xl border border-dark-600">
+                        <table class="w-full text-xs">
+                            <thead class="text-gray-500 bg-dark-700 sticky-header">
+                                <tr>
+                                    <th class="text-left py-2 px-3">${getLang() === 'zh' ? '类型' : 'Type'}</th>
+                                    <th class="text-left py-2 px-3">${getLang() === 'zh' ? '描述' : 'Description'}</th>
+                                    <th class="text-left py-2 px-3">${getLang() === 'zh' ? '子市场' : 'Market'}</th>
+                                    <th class="text-left py-2 px-3">TX</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">`;
+                
+                const typeColors = { split: 'text-blue-400', merge: 'text-green-400', redeem: 'text-yellow-400', convert: 'text-purple-400' };
+                events.forEach(e => {
+                    const txShort = e.tx_hash ? e.tx_hash.substring(0, 10) + '...' : '';
+                    const txLink = e.tx_hash ? `https://polygonscan.com/tx/${e.tx_hash}` : '#';
+                    html += `
+                        <tr class="border-t border-dark-600">
+                            <td class="py-2 px-3 ${typeColors[e.type] || 'text-gray-400'}">${e.type}</td>
+                            <td class="py-2 px-3">${e.description || '-'}</td>
+                            <td class="py-2 px-3 text-cyan-400">${e.market_name || '-'}</td>
+                            <td class="py-2 px-3"><a href="${txLink}" target="_blank" class="text-primary hover:underline">${txShort}</a></td>
+                        </tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+
+            content.innerHTML = html;
+        }
+
+        // ==================== 子市场列表 ====================
+        function renderMarketsList(eventTitle) {
+            const eventLabel = getLang() === 'en' ? 'Event: ' : '事件: ';
+            document.getElementById('eventTitle').textContent = eventLabel + eventTitle;
+            
+            const listEl = document.getElementById('marketsList');
+            listEl.innerHTML = '';
+            
+            if (marketsData.length === 0) {
+                listEl.innerHTML = `<p class="text-gray-500 text-center py-4">${t('error_no_trades')}</p>`;
+            } else {
+                marketsData.forEach((market, index) => {
+                    listEl.appendChild(createMarketItem(market, index, true));
+                });
+            }
+
+            // 添加占位项（等待链上操作检查）
+            const placeholder = document.createElement('div');
+            placeholder.id = 'chain-markets-placeholder';
+            placeholder.className = 'flex items-center gap-4 p-4 bg-dark-800/50 rounded-xl border border-dark-600 opacity-50';
+            placeholder.innerHTML = `
+                <div class="w-5 h-5 rounded border-2 border-dark-600"></div>
+                <div class="flex items-center gap-2 text-gray-500">
+                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>${getLang() === 'zh' ? '正在检查更多市场...' : 'Checking more markets...'}</span>
+                </div>
+            `;
+            listEl.appendChild(placeholder);
+
+            // 设置卡片3折叠摘要为加载状态
+            setCard3LoadingSummary();
+            
+            updateSelectedCount();
+        }
+        
+        function setCard3LoadingSummary() {
+            const summary = document.getElementById('card3-summary');
+            summary.innerHTML = `
+                <svg class="w-3 h-3 animate-spin inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                ${getLang() === 'zh' ? '正在检查更多市场...' : 'Checking more markets...'}
+            `;
+        }
+        
+        function clearCard3LoadingSummary() {
+            const summary = document.getElementById('card3-summary');
+            summary.textContent = '';
+        }
+
+        function createMarketItem(market, index, canSelect) {
+            const div = document.createElement('div');
+            div.className = `flex items-center gap-4 p-4 bg-dark-800 rounded-xl border border-dark-600 ${canSelect ? 'cursor-pointer hover:border-primary/50' : 'opacity-50'} transition-all`;
+            div.id = 'market-' + index;
+            if (canSelect) div.onclick = () => toggleMarket(index);
+
+            // 持仓信息
+            let positionInfo = '';
+            if (market.has_position) {
+                const posLabel = getLang() === 'zh' ? '持仓' : 'Position';
+                let posDetails = [];
+                if (market.yes_shares > 0) posDetails.push(`Yes: ${market.yes_shares.toFixed(2)}`);
+                if (market.no_shares > 0) posDetails.push(`No: ${market.no_shares.toFixed(2)}`);
+                positionInfo = `<span class="text-green-400 ml-2">[${posLabel}: ${posDetails.join(', ')}]</span>`;
+            }
+
+            // 交易信息：只显示 trade_count（API交易记录），避免重复计算
+            const tradeCount = market.trade_count || 0;
+            
+            let tradeInfo = '';
+            if (tradeCount > 0) {
+                tradeInfo = getLang() === 'zh' ? '请分析后查看交易详情' : 'Analyze for trade details';
+            } else if (market.has_position) {
+                tradeInfo = getLang() === 'zh' ? '有持仓（无交易记录）' : 'Has position (no trades)';
+            }
+            
+            // 兜底：如果 tradeInfo 为空（链上操作市场，来自 addExtraMarkets），也显示提示
+            if (!tradeInfo) {
+                tradeInfo = getLang() === 'zh' ? '请分析后查看交易详情' : 'Analyze for trade details';
+            }
+
+            div.innerHTML = `
+                <div class="w-5 h-5 rounded border-2 border-dark-600 flex items-center justify-center transition-all" id="checkbox-${index}"></div>
+                <div class="flex-1">
+                    <div class="font-medium">${market.question}${positionInfo}</div>
+                    <div class="text-sm text-gray-500">${tradeInfo}</div>
+                </div>
+            `;
+            return div;
+        }
+
+        function addExtraMarkets(extraMarkets) {
+            const listEl = document.getElementById('marketsList');
+            const existingCids = new Set(marketsData.map(m => m.condition_id.toLowerCase()));
+            const placeholder = document.getElementById('chain-markets-placeholder');
+
+            extraMarkets.forEach(market => {
+                if (!existingCids.has(market.condition_id.toLowerCase())) {
+                    marketsData.push(market);
+                    const index = marketsData.length - 1;
+                    if (placeholder) {
+                        listEl.insertBefore(createMarketItem(market, index, true), placeholder);
+                    } else {
+                        listEl.appendChild(createMarketItem(market, index, true));
+                    }
+                }
+            });
+        }
+
+        function removePlaceholder() {
+            const placeholder = document.getElementById('chain-markets-placeholder');
+            if (placeholder) placeholder.remove();
+        }
+
+        function toggleMarket(index) {
+            const idx = selectedMarkets.indexOf(index);
+            const div = document.getElementById('market-' + index);
+            const checkbox = document.getElementById('checkbox-' + index);
+            
+            if (idx === -1) {
+                selectedMarkets.push(index);
+                div.classList.add('border-primary');
+                checkbox.classList.add('border-primary', 'bg-primary');
+                checkbox.innerHTML = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+            } else {
+                selectedMarkets.splice(idx, 1);
+                div.classList.remove('border-primary');
+                checkbox.classList.remove('border-primary', 'bg-primary');
+                checkbox.innerHTML = '';
+            }
+            updateSelectedCount();
+        }
+
+        function selectAllMarkets() {
+            marketsData.forEach((_, index) => {
+                if (!selectedMarkets.includes(index)) toggleMarket(index);
+            });
+        }
+
+        function deselectAllMarkets() {
+            [...selectedMarkets].forEach(index => toggleMarket(index));
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = t('multi_selected_count', {n: selectedMarkets.length});
+            document.getElementById('analyzeBtn').disabled = selectedMarkets.length === 0;
+        }
+
+        function goBackStep1() {
+            expandCard(1);
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==================== 批量分析 ====================
+        async function startBatchAnalysis() {
+            if (selectedMarkets.length === 0) return;
+            
+            const address = document.getElementById('address').value.trim();
+            
+            // 折叠卡片3，更新摘要
+            document.getElementById('card3-summary').textContent = t('multi_selected_count', {n: selectedMarkets.length});
+            collapseCard(3);
+            
+            // 显示进度区域和结果区域
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+            
+            currentBatchIndex = 0;
+            isCancelled = false;
+            
+            for (let i = 0; i < selectedMarkets.length; i++) {
+                if (isCancelled) break;
+                
+                currentBatchIndex = i;
+                const marketIndex = selectedMarkets[i];
+                const market = marketsData[marketIndex];
+                
+                // 更新进度信息
+                document.getElementById('batchProgressInfo').textContent = t('multi_progress_info', {current: i + 1, total: selectedMarkets.length, name: market.question});
+                document.getElementById('progressFill').style.width = '0%';
+                
+                try {
+                    const result = await analyzeSingleMarket(market, address);
+                    if (result && !isCancelled) {
+                        batchResults.push({ market: market, result: result });
+                        // 立即显示结果（插入到顶部）
+                        insertResultCard(market, result);
+                    }
+                } catch (e) {
+                    console.error('分析失败:', e);
+                }
+            }
+            
+            // 隐藏进度条
+            document.getElementById('progressSection').classList.add('hidden');
+            
+            if (!isCancelled && batchResults.length === 0) {
+                showError(t('error_fetch_failed'));
+                expandCard(3);
+            }
+        }
+        
+        let resultCardCounter = 0;
+        
+        function insertResultCard(market, result) {
+            const cardId = `result-card-${Date.now()}-${resultCardCounter++}`;
+            const html = generateResultCardHtml(market, result, cardId);
+            
+            const resultContent = document.getElementById('resultContent');
+            resultContent.insertAdjacentHTML('afterbegin', html);
+        }
+
+        async function analyzeSingleMarket(market, address) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const response = await fetch('/api/multi/analyze', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            condition_id: market.condition_id,
+                            address: address,
+                            market_title: market.question,
+                            is_resolved: market.is_resolved || false,
+                            outcomes: market.outcomes || '["Yes", "No"]',
+                            lang: getLang(),
+                            market_url: currentEventUrl,
+                            event_slug: currentEventSlug
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.error) { resolve(null); return; }
+
+                    currentTaskId = data.task_id;
+                    const result = await pollSingleTask(currentTaskId);
+                    resolve(result);
+                } catch (e) { reject(e); }
+            });
+        }
+
+        function pollSingleTask(taskId) {
+            return new Promise((resolve, reject) => {
+                const interval = setInterval(async () => {
+                    if (isCancelled) { clearInterval(interval); resolve(null); return; }
+
+                    try {
+                        const response = await fetch(`/api/status/${taskId}`);
+                        const data = await response.json();
+
+                        const percent = data.percent || 0;
+                        document.getElementById('progressFill').style.width = percent + '%';
+
+                        if (data.status === 'completed') {
+                            clearInterval(interval);
+                            resolve({...data.result, task_id: taskId});
+                        } else if (data.status === 'error' || data.status === 'cancelled') {
+                            clearInterval(interval);
+                            resolve(null);
+                        }
+                    } catch (e) { console.error('轮询状态失败:', e); }
+                }, 1000);
+            });
+        }
+
+        async function cancelBatchAnalysis() {
+            isCancelled = true;
+            if (currentTaskId) {
+                try { await fetch(`/api/cancel/${currentTaskId}`, {method: 'POST'}); } catch (e) {}
+            }
+            currentTaskId = null;
+            document.getElementById('progressSection').classList.add('hidden');
+            expandCard(3);
+        }
+
+        // ==================== 显示结果 ====================
+        function generateResultCardHtml(market, result, cardId) {
+            return `
+                <div class="glass rounded-2xl overflow-hidden mb-6" id="${cardId}">
+                    <div class="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleResultCard('${cardId}')">
+                        <h3 class="text-lg font-semibold flex-1 mr-4">${market.question}</h3>
+                        <div class="flex items-center gap-2">
+                            <div class="flex gap-2 flex-wrap" onclick="event.stopPropagation()">
+                                ${result.chart ? `<a href="/static/${result.task_id}/${result.chart}" download class="px-3 py-1.5 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors text-sm flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>${t('simple_download_chart')}</a>` : ''}
+                                ${result.report ? `<a href="/static/${result.task_id}/${result.report}" download class="px-3 py-1.5 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors text-sm flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>${t('simple_download_report')}</a>` : ''}
+                                ${result.trades ? `<a href="/static/${result.task_id}/${result.trades}" download class="px-3 py-1.5 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors text-sm flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>${t('simple_download_data')}</a>` : ''}
+                            </div>
+                            <svg id="${cardId}-toggle-icon" class="w-5 h-5 text-gray-400 card-toggle-icon ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="card-body px-6 pb-6" id="${cardId}-body">
+                        <div id="${cardId}-content-wrapper" class="grid md:grid-cols-2 gap-6 relative">
+                            <div id="${cardId}-report-desktop" class="hidden md:block absolute inset-y-0 left-0 w-[calc(50%-12px)] transition-all duration-300">
+                                <div class="bg-dark-800 rounded-xl border border-dark-600 p-4 h-full flex flex-col">
+                                    <div class="flex items-center justify-between mb-3 flex-shrink-0">
+                                        <h4 class="font-semibold flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            ${t('result_report')}
+                                        </h4>
+                                        <button onclick="event.stopPropagation(); toggleReportExpand('${cardId}')" class="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors px-2 py-1 rounded hover:bg-dark-700">
+                                            <span id="${cardId}-expand-text">${getLang() === 'zh' ? '展开' : 'Expand'}</span>
+                                            <svg id="${cardId}-expand-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                                        </button>
+                                    </div>
+                                    <pre class="text-xs text-gray-300 font-mono whitespace-pre-wrap bg-dark-900 rounded-lg p-3 flex-1 overflow-y-auto">${result.report_content || t('result_no_report')}</pre>
+                                </div>
+                            </div>
+                            <div id="${cardId}-placeholder" class="hidden md:block"></div>
+                            <div id="${cardId}-stats-section">
+                                ${result.report_content ? generateDetailedStats(result.report_content, cardId) : `<p class="text-gray-500">${t('result_no_report')}</p>`}
+                            </div>
+                        </div>
+                        <div class="md:hidden mt-6">
+                            ${result.report_content ? generateReportSection(result.report_content, cardId) : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleResultCard(cardId) {
+            const body = document.getElementById(`${cardId}-body`);
+            const icon = document.getElementById(`${cardId}-toggle-icon`);
+            
+            if (body.classList.contains('collapsed')) {
+                body.classList.remove('collapsed');
+                icon.classList.remove('collapsed');
+            } else {
+                body.classList.add('collapsed');
+                icon.classList.add('collapsed');
+            }
+        }
+
+        function generateDetailedStats(content, cardId) {
+            const isEnReport = content.includes('Wallet Address:') || content.includes('Trade Count:');
+            
+            const tradeCount = content.match(/(?:交易次数|Trade Count): (\d+)/)?.[1] || '0';
+            const makerCount = content.match(/MAKER.*?(\d+)/)?.[1] || '0';
+            const takerCount = content.match(/TAKER.*?(\d+)/)?.[1] || '0';
+            const unknownCount = content.match(/UNKNOWN.*?(\d+)/)?.[1] || '0';
+            const netExposure = content.match(/(?:总支出 \(净敞口\)|Total Spent \(Net Exposure\)): \$ ([-\d.]+)/)?.[1] || '0';
+            const finalValue = content.match(/(?:最终价值|Final Value): \$ ([-\d.]+)/)?.[1] || null;
+            const pnl = content.match(/(?:最终盈亏|Final P&L): \$ ([-\d.]+)/)?.[1] || null;
+            const isResolved = content.includes('市场状态: 已结算') || content.includes('Market Status: Settled');
+            const resolvedSide = content.match(/(?:结算方向|Settlement): (\w+)/)?.[1] || null;
+            
+            const outcomeMatchesZh = content.match(/剩余 (\w+) 份额/g) || [];
+            const outcomeMatchesEn = content.match(/Remaining (\w+) Shares/g) || [];
+            const outcomeMatches = outcomeMatchesZh.length > 0 ? outcomeMatchesZh : outcomeMatchesEn;
+            const outcomeRegex = outcomeMatchesZh.length > 0 ? /剩余 (\w+) 份额/ : /Remaining (\w+) Shares/;
+            const outcome0Name = outcomeMatches[0]?.match(outcomeRegex)?.[1] || 'Yes';
+            const outcome1Name = outcomeMatches[1]?.match(outcomeRegex)?.[1] || 'No';
+            
+            const yesSharesMatch = content.match(new RegExp(`(?:剩余 ${outcome0Name} 份额|Remaining ${outcome0Name} Shares):\\s*([\\d.]+)`));
+            const noSharesMatch = content.match(new RegExp(`(?:剩余 ${outcome1Name} 份额|Remaining ${outcome1Name} Shares):\\s*([\\d.]+)`));
+            const yesShares = yesSharesMatch?.[1] || '0';
+            const noShares = noSharesMatch?.[1] || '0';
+            
+            const yesCost = content.match(new RegExp(`${outcome0Name} (?:买入|Buy):\\s*([\\d.]+) (?:份|sh) \\/ \\$ ([\\d.]+)`));
+            const noCost = content.match(new RegExp(`${outcome1Name} (?:买入|Buy):\\s*([\\d.]+) (?:份|sh) \\/ \\$ ([\\d.]+)`));
+            const yesSell = content.match(new RegExp(`${outcome0Name} (?:卖出|Sell):\\s*([\\d.]+) (?:份|sh) \\/ \\$ ([\\d.]+)`));
+            const noSell = content.match(new RegExp(`${outcome1Name} (?:卖出|Sell):\\s*([\\d.]+) (?:份|sh) \\/ \\$ ([\\d.]+)`));
+            
+            const yesPeak = content.match(new RegExp(`${outcome0Name} (?:美元峰值|Dollar Peak):\\s*\\$ ([\\d.]+) (?:于第|at Trade #)(\\d+)`));
+            const noPeak = content.match(new RegExp(`${outcome1Name} (?:美元峰值|Dollar Peak):\\s*\\$ ([\\d.]+) (?:于第|at Trade #)(\\d+)`));
+            
+            const yesExp = content.match(new RegExp(`${outcome0Name} (?:敞口|Exposure):\\s*\\$ ([\\d.]+)`))?.[1] || '0';
+            const noExp = content.match(new RegExp(`${outcome1Name} (?:敞口|Exposure):\\s*\\$ ([\\d.]+)`))?.[1] || '0';
+
+            const pnlNum = pnl ? parseFloat(pnl) : 0;
+            const pnlColor = pnlNum >= 0 ? 'text-green-500' : 'text-red-500';
+            const pnlSign = pnlNum >= 0 ? '+' : '';
+            const pnlPercent = (isResolved && parseFloat(netExposure) !== 0) ? ((pnlNum / parseFloat(netExposure)) * 100).toFixed(2) : '0';
+            
+            const totalTrades = parseInt(tradeCount);
+            const makerPct = totalTrades > 0 ? ((parseInt(makerCount) / totalTrades) * 100).toFixed(1) : '0';
+            const takerPct = totalTrades > 0 ? ((parseInt(takerCount) / totalTrades) * 100).toFixed(1) : '0';
+            const unknownPct = totalTrades > 0 ? ((parseInt(unknownCount) / totalTrades) * 100).toFixed(1) : '0';
+            
+            // 交易来源统计
+            const directCount = parseInt(content.match(/Direct.*?(\d+)\s*笔/)?.[1] || '0');
+            const negRiskCount = parseInt(content.match(/Neg-Risk.*?(\d+)\s*笔/)?.[1] || '0');
+            const splitCount = parseInt(content.match(/Split.*?(\d+)\s*笔/)?.[1] || '0');
+            const mergeCount = parseInt(content.match(/Merge.*?(\d+)\s*笔/)?.[1] || '0');
+            const redeemCount = parseInt(content.match(/Redeem.*?(\d+)\s*笔/)?.[1] || '0');
+            const transferCount = parseInt(content.match(/Transfer.*?(\d+)\s*笔/)?.[1] || '0');
+            const sourceTotal = directCount + negRiskCount + splitCount + mergeCount + redeemCount + transferCount;
+
+            const yesBuyCost = yesCost ? parseFloat(yesCost[2]) : 0;
+            const yesBuyShares = yesCost ? parseFloat(yesCost[1]) : 0;
+            const noBuyCost = noCost ? parseFloat(noCost[2]) : 0;
+            const noBuyShares = noCost ? parseFloat(noCost[1]) : 0;
+            const yesAvgPrice = yesBuyShares > 0 ? (yesBuyCost / yesBuyShares).toFixed(2) : '0.00';
+            const noAvgPrice = noBuyShares > 0 ? (noBuyCost / noBuyShares).toFixed(2) : '0.00';
+            const totalShares = parseFloat(yesShares) + parseFloat(noShares);
+            
+            const lbl_tradeN = getLang() === 'en' ? '#' : '第';
+            const lbl_tradeNSuffix = getLang() === 'en' ? '' : '笔';
+
+            return `
+                <!-- 核心统计卡片 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="text-gray-400 text-xs mb-1">${t('result_trade_count')}</div>
+                        <div class="text-xl font-bold">${parseInt(tradeCount).toLocaleString()}</div>
+                        <div class="mt-1 text-xs">
+                            <span class="text-green-500">MAKER ${makerCount}</span>
+                            <span class="text-gray-600 mx-1">|</span>
+                            <span class="text-blue-500">TAKER ${takerCount}</span>
+                        </div>
+                    </div>
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="text-gray-400 text-xs mb-1">${t('result_net_exposure')}</div>
+                        <div class="text-xl font-bold">${formatNumber(parseFloat(netExposure), '$')}</div>
+                        <div class="mt-1 text-xs text-gray-500">${formatNumber(totalShares)} sh</div>
+                    </div>
+                    ${isResolved ? `
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="text-gray-400 text-xs mb-1">${t('result_final_value')}</div>
+                        <div class="text-xl font-bold">${formatNumber(parseFloat(finalValue || 0), '$')}</div>
+                        <div class="mt-1 text-xs text-gray-500">${t('result_settlement')}: <span class="text-green-400">${resolvedSide}</span></div>
+                    </div>
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="text-gray-400 text-xs mb-1">${t('result_pnl')}</div>
+                        <div class="text-xl font-bold ${pnlColor}">${pnlSign}${formatNumber(Math.abs(pnlNum), '$')}</div>
+                        <div class="mt-1 text-xs ${pnlColor}">${pnlSign}${pnlPercent}%</div>
+                    </div>
+                    ` : `
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600 col-span-2">
+                        <div class="text-gray-400 text-xs mb-1">${t('market_status')}</div>
+                        <div class="text-xl font-bold text-yellow-500">${t('result_unsettled')}</div>
+                        <div class="mt-1 text-xs text-gray-500">${t('result_unsettled_note')}</div>
+                    </div>
+                    `}
+                </div>
+
+                <!-- UP/DOWN 持仓详情 -->
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                            <span class="font-semibold">${outcome0Name.toUpperCase()}</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_remaining_shares')}</span><span class="font-semibold">${parseFloat(yesShares).toFixed(2)} sh</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_buy_cost')}</span><span class="font-semibold">$${yesBuyCost.toFixed(2)}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_avg_price')}</span><span class="font-semibold text-green-400">$${yesAvgPrice}/sh</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_sell')}</span><span class="text-gray-500">${yesSell ? yesSell[1] : '0.00'} sh / $${yesSell ? yesSell[2] : '0.00'}</span></div>
+                            <div class="border-t border-dark-600 pt-2 flex justify-between text-xs">
+                                <span class="text-gray-400">${t('result_peak_exposure')}</span>
+                                <span class="text-gray-300">$${yesPeak ? yesPeak[1] : '0.00'} <span class="text-gray-500">(${lbl_tradeN}${yesPeak ? yesPeak[2] : '0'}${lbl_tradeNSuffix})</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                            <span class="font-semibold">${outcome1Name.toUpperCase()}</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_remaining_shares')}</span><span class="font-semibold">${parseFloat(noShares).toFixed(2)} sh</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_buy_cost')}</span><span class="font-semibold">$${noBuyCost.toFixed(2)}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_avg_price')}</span><span class="font-semibold text-red-400">$${noAvgPrice}/sh</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">${t('result_sell')}</span><span class="text-gray-500">${noSell ? noSell[1] : '0.00'} sh / $${noSell ? noSell[2] : '0.00'}</span></div>
+                            <div class="border-t border-dark-600 pt-2 flex justify-between text-xs">
+                                <span class="text-gray-400">${t('result_peak_exposure')}</span>
+                                <span class="text-gray-300">$${noPeak ? noPeak[1] : '0.00'} <span class="text-gray-500">(${lbl_tradeN}${noPeak ? noPeak[2] : '0'}${lbl_tradeNSuffix})</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maker/Taker 分布 -->
+                <div class="bg-dark-800 rounded-xl p-4 border border-dark-600 mb-6">
+                    <h4 class="font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        ${t('result_maker_taker')}
+                    </h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-green-500">MAKER</span><span class="text-green-500 font-bold">${makerCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width: ${makerPct}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${makerPct}%</div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-blue-500">TAKER</span><span class="text-blue-500 font-bold">${takerCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width: ${takerPct}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${takerPct}%</div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-gray-400">UNKNOWN</span><span class="text-gray-400 font-bold">${unknownCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-gray-500 rounded-full" style="width: ${unknownPct}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${unknownPct}%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交易来源分布 -->
+                ${sourceTotal > 0 ? `
+                <div class="bg-dark-800 rounded-xl p-4 border border-dark-600 mb-6">
+                    <h4 class="font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                        </svg>
+                        ${t('result_source_stats')}
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        ${directCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-cyan-400">Direct</span><span class="text-cyan-400 font-bold">${directCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-cyan-400 rounded-full" style="width: ${(directCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(directCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                        ${negRiskCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-purple-400">Neg-Risk</span><span class="text-purple-400 font-bold">${negRiskCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-purple-400 rounded-full" style="width: ${(negRiskCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(negRiskCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                        ${splitCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-blue-400">Split</span><span class="text-blue-400 font-bold">${splitCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-blue-400 rounded-full" style="width: ${(splitCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(splitCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                        ${mergeCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-green-400">Merge</span><span class="text-green-400 font-bold">${mergeCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-green-400 rounded-full" style="width: ${(mergeCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(mergeCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                        ${redeemCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-yellow-400">Redeem</span><span class="text-yellow-400 font-bold">${redeemCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-yellow-400 rounded-full" style="width: ${(redeemCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(redeemCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                        ${transferCount > 0 ? `<div>
+                            <div class="flex justify-between text-sm mb-1"><span class="text-orange-400">Transfer</span><span class="text-orange-400 font-bold">${transferCount}</span></div>
+                            <div class="h-2 bg-dark-700 rounded-full overflow-hidden"><div class="h-full bg-orange-400 rounded-full" style="width: ${(transferCount/sourceTotal*100).toFixed(1)}%"></div></div>
+                            <div class="text-right text-xs text-gray-500 mt-1">${(transferCount/sourceTotal*100).toFixed(1)}%</div>
+                        </div>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- 敞口汇总 -->
+                <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                    <h4 class="font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        ${t('result_exposure_summary')}
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-dark-600">
+                                    <th class="text-left py-2 font-medium">${t('result_type')}</th>
+                                    <th class="text-right py-2 font-medium">${t('result_dollar_exposure')}</th>
+                                    <th class="text-right py-2 font-medium">${t('result_share_exposure')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-dark-700">
+                                    <td class="py-2 flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full"></span>${outcome0Name.toUpperCase()} ${t('result_exposure')}</td>
+                                    <td class="text-right py-2 text-green-400">$${parseFloat(yesExp).toFixed(2)}</td>
+                                    <td class="text-right py-2">${parseFloat(yesShares).toFixed(2)} sh</td>
+                                </tr>
+                                <tr class="border-b border-dark-700">
+                                    <td class="py-2 flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full"></span>${outcome1Name.toUpperCase()} ${t('result_exposure')}</td>
+                                    <td class="text-right py-2 text-red-400">$${parseFloat(noExp).toFixed(2)}</td>
+                                    <td class="text-right py-2">${parseFloat(noShares).toFixed(2)} sh</td>
+                                </tr>
+                                <tr class="font-semibold">
+                                    <td class="py-2 flex items-center gap-2"><span class="w-2 h-2 bg-primary rounded-full"></span>${t('result_net')}</td>
+                                    <td class="text-right py-2 text-primary">$${parseFloat(netExposure).toFixed(2)}</td>
+                                    <td class="text-right py-2">${totalShares.toFixed(2)} sh</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateReportSection(content, cardId) {
+            return `
+                <div class="bg-dark-800 rounded-xl border border-dark-600 p-4">
+                    <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleMobileReport('${cardId}')">
+                        <h4 class="font-semibold flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            ${t('result_report')}
+                        </h4>
+                        <svg id="${cardId}-mobile-icon" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                    <div id="${cardId}-mobile-report" class="hidden">
+                        <pre class="text-xs text-gray-300 font-mono whitespace-pre-wrap bg-dark-900 rounded-lg p-3 max-h-64 overflow-y-auto">${content}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleMobileReport(cardId) {
+            const report = document.getElementById(`${cardId}-mobile-report`);
+            const icon = document.getElementById(`${cardId}-mobile-icon`);
+            if (report.classList.contains('hidden')) {
+                report.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                report.classList.add('hidden');
+                icon.style.transform = '';
+            }
+        }
+
+        function toggleReportExpand(cardId) {
+            const wrapper = document.getElementById(`${cardId}-content-wrapper`);
+            const reportDesktop = document.getElementById(`${cardId}-report-desktop`);
+            const statsSection = document.getElementById(`${cardId}-stats-section`);
+            const placeholder = document.getElementById(`${cardId}-placeholder`);
+            const expandText = document.getElementById(`${cardId}-expand-text`);
+            const expandIcon = document.getElementById(`${cardId}-expand-icon`);
+
+            if (reportDesktop.style.width === '100%') {
+                reportDesktop.style.width = 'calc(50% - 12px)';
+                statsSection.classList.remove('hidden');
+                placeholder.classList.remove('hidden');
+                expandText.textContent = getLang() === 'zh' ? '展开' : 'Expand';
+                expandIcon.style.transform = '';
+            } else {
+                reportDesktop.style.width = '100%';
+                statsSection.classList.add('hidden');
+                placeholder.classList.add('hidden');
+                expandText.textContent = getLang() === 'zh' ? '收起' : 'Collapse';
+                expandIcon.style.transform = 'rotate(45deg)';
+            }
+        }
+
+        function resetAll() {
+            // 隐藏并清空结果
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('resultContent').innerHTML = '';
+            
+            // 隐藏卡片2和3
+            hideCard(2);
+            hideCard(3);
+            
+            // 展开卡片1
+            expandCard(1);
+            document.getElementById('card1-summary').classList.add('hidden');
+            
+            // 重置状态
+            marketsData = [];
+            selectedMarkets = [];
+            batchResults = [];
+            chainEventsLoaded = false;
+            resultCardCounter = 0;
+            
+            // 清空列表
+            document.getElementById('marketsList').innerHTML = '';
+            document.getElementById('chainEventsContent').innerHTML = '';
+            
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==================== 通用功能 ====================
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden', 'mobile-menu-exit');
+                menu.classList.add('mobile-menu-enter');
+            } else {
+                menu.classList.remove('mobile-menu-enter');
+                menu.classList.add('mobile-menu-exit');
+                setTimeout(() => menu.classList.add('hidden'), 200);
+            }
+        }
+
+        // 页面过渡
+        function navigateWithTransition(href) {
+            const overlay = document.getElementById('pageOverlay');
+            overlay.classList.remove('overlay-exit');
+            overlay.classList.add('overlay-enter');
+            setTimeout(() => { window.location.href = href; }, 100);
+        }
+        document.querySelectorAll('a[href^="/"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                navigateWithTransition(this.getAttribute('href'));
+            });
+        });
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                const overlay = document.getElementById('pageOverlay');
+                overlay.classList.remove('overlay-enter');
+                overlay.classList.add('overlay-exit');
+            }
+        });
+    </script>
+</body>
+</html>

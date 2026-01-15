@@ -1,0 +1,293 @@
+// 国际化配置文件
+const I18N = {
+    zh: {
+        // 导航
+        nav_quick_query: '快速查询',
+        nav_multi_query: '多选项市场查询',
+        lang_toggle: '中文',
+        
+        // 首页
+        home_subtitle: '分析每笔交易的 Maker/Taker 角色 · 持仓敞口曲线追踪 · 自动生成盈亏分析报告',
+        home_quick_title: '快速查询',
+        home_quick_desc: '输入市场名称和钱包地址，快速获取交易分析报告。适用于大多数二元市场。',
+        home_multi_title: '多选项市场查询',
+        home_multi_desc: '通过市场 URL 查询包含多个子选项的市场，选择具体子市场进行分析。',
+        home_start_query: '开始查询',
+        home_instructions: '使用说明',
+        home_step1_title: '选择查询模式',
+        home_step1_desc: '普通市场选择快速查询，多选项市场选择子市场查询',
+        home_step2_title: '输入查询信息',
+        home_step2_desc: '输入市场名称或 URL，以及要分析的钱包地址',
+        home_step3_title: '获取分析报告',
+        home_step3_desc: '查看 Maker/Taker 角色、持仓敞口、盈亏报告',
+        home_footer: '本工具完全免费，请点击右上角 X 图标关注作者获取更多免费工具与更新。',
+        home_notice_line1: '支持查询绝大部分市场',
+        home_notice_line2: '仅 Sports 板块 Games 类型市场未支持（如：某队 vs 某队）',
+        
+        // 快速查询页
+        simple_title: '快速查询',
+        simple_subtitle: '输入市场名称和钱包地址，快速获取交易分析报告。适用于大多数二元市场。',
+        simple_market_label: '市场名称',
+        simple_market_placeholder: '例如: Bitcoin Up or Down - January 8',
+        simple_wallet_label: '钱包地址',
+        simple_wallet_placeholder: '0x...',
+        simple_btn_analyze: '开始分析',
+        simple_hint: '输入市场名称和钱包地址，获取完整的交易分析报告',
+        simple_progress_fetching: '正在获取交易数据...',
+        simple_progress_analyzing: '正在分析 Maker/Taker 角色...',
+        simple_btn_cancel: '取消查询',
+        simple_btn_new_query: '新查询',
+        simple_download_chart: '图表',
+        simple_download_report: '报告',
+        simple_download_data: '数据',
+        
+        // 多选项查询页
+        multi_title: '多选项市场查询',
+        multi_subtitle: '通过市场 URL 查询包含多个子选项的市场，选择具体子市场进行分析。',
+        multi_input_title: '输入信息',
+        multi_chain_title: '链上操作记录',
+        multi_url_label: '市场 URL',
+        multi_url_placeholder: '例如: https://polymarket.com/event/...',
+        multi_wallet_label: '钱包地址',
+        multi_wallet_placeholder: '0x...',
+        multi_btn_fetch: '获取子市场列表',
+        multi_hint: '输入市场 URL 和钱包地址，获取该用户在此事件下的所有交易市场',
+        multi_select_title: '选择用户交易过的子市场（可多选）',
+        multi_select_all: '全选',
+        multi_deselect_all: '取消全选',
+        multi_selected_count: '已选择 {n} 个',
+        multi_btn_back: '返回修改',
+        multi_btn_analyze: '开始分析',
+        multi_analyzing: '批量分析中',
+        multi_progress_info: '正在分析第 {current} / {total} 个市场: {name}',
+        multi_btn_cancel: '取消分析',
+        multi_btn_reset: '重新查询',
+        multi_trades_count: '{n} 笔交易',
+        
+        // 结果展示
+        result_trade_count: '总交易笔数',
+        result_net_exposure: '净敞口',
+        result_final_value: '最终价值',
+        result_pnl: '最终盈亏',
+        result_settlement: '结算',
+        result_unsettled: '未结算',
+        result_unsettled_note: '盈亏将在结算后计算',
+        result_remaining_shares: '剩余份额',
+        result_buy_cost: '买入成本',
+        result_avg_price: '均摊价',
+        result_sell: '卖出',
+        result_peak_exposure: '峰值敞口',
+        result_trade_n: '第{n}笔',
+        result_maker_taker: 'Maker/Taker 分布',
+        result_exposure_summary: '最终敞口汇总',
+        result_type: '类型',
+        result_dollar_exposure: '美元敞口',
+        result_share_exposure: '份额敞口',
+        result_exposure: '敞口',
+        result_net: '净敞口',
+        result_trade_report: '交易报告',
+        result_report: '交易报告',
+        result_expand: '展开查看',
+        result_collapse: '收起',
+        result_no_data: '无报告数据',
+        result_no_report: '无报告数据',
+        market_status: '市场状态',
+        
+        // 来源统计
+        result_source_stats: '交易来源分布',
+        source_direct: 'Direct (直接交易)',
+        source_neg_risk: 'Neg-Risk (转换)',
+        source_split: 'Split (拆分)',
+        source_merge: 'Merge (合并)',
+        source_transfer: 'Transfer (转账)',
+        source_redeem: 'Redeem (赎回)',
+        source_unknown: 'Unknown (未知)',
+        
+        // 错误消息
+        error_no_market: '请输入市场名称',
+        error_no_url: '请输入市场 URL',
+        error_invalid_wallet: '请输入有效的钱包地址 (0x开头，42位)',
+        error_invalid_url: '无效的 Polymarket URL，请输入事件页面的链接',
+        error_not_found: '未找到该事件',
+        error_no_markets: '该事件下没有子市场',
+        error_no_trades: '该用户在此市场没有交易记录',
+        error_task_not_found: '任务不存在',
+        error_fetch_failed: '获取市场信息失败',
+        error_query_cancelled: '查询已取消',
+    },
+    en: {
+        // Navigation
+        nav_quick_query: 'Quick Query',
+        nav_multi_query: 'Multi-Option Query',
+        lang_toggle: 'English',
+        
+        // Home page
+        home_subtitle: 'Analyze Maker/Taker roles · Track position exposure · Auto-generate P&L reports',
+        home_quick_title: 'Quick Query',
+        home_quick_desc: 'Enter market name and wallet address to get trading analysis report. Suitable for most binary markets.',
+        home_multi_title: 'Multi-Option Query',
+        home_multi_desc: 'Query markets with multiple sub-options via URL, select specific sub-markets for analysis.',
+        home_start_query: 'Start Query',
+        home_instructions: 'Instructions',
+        home_step1_title: 'Choose Query Mode',
+        home_step1_desc: 'Use Quick Query for regular markets, Multi-Option Query for complex markets',
+        home_step2_title: 'Enter Information',
+        home_step2_desc: 'Enter market name or URL, and the wallet address to analyze',
+        home_step3_title: 'Get Analysis Report',
+        home_step3_desc: 'View Maker/Taker roles, position exposure, P&L report',
+        home_footer: 'This tool is completely free. Follow the author on X (top right) for more free tools and updates.',
+        home_notice_line1: 'Supports most market queries',
+        home_notice_line2: 'Sports > Games markets not supported (e.g., Team vs Team)',
+        
+        // Quick query page
+        simple_title: 'Quick Query',
+        simple_subtitle: 'Enter market name and wallet address to get trading analysis report. Suitable for most binary markets.',
+        simple_market_label: 'Market Name',
+        simple_market_placeholder: 'e.g., Bitcoin Up or Down - January 8',
+        simple_wallet_label: 'Wallet Address',
+        simple_wallet_placeholder: '0x...',
+        simple_btn_analyze: 'Start Analysis',
+        simple_hint: 'Enter market name and wallet address to get complete trading analysis report',
+        simple_progress_fetching: 'Fetching trade data...',
+        simple_progress_analyzing: 'Analyzing Maker/Taker roles...',
+        simple_btn_cancel: 'Cancel',
+        simple_btn_new_query: 'New Query',
+        simple_download_chart: 'Chart',
+        simple_download_report: 'Report',
+        simple_download_data: 'Data',
+        
+        // Multi-option query page
+        multi_title: 'Multi-Option Query',
+        multi_subtitle: 'Query markets with multiple sub-options via URL, select specific sub-markets for analysis.',
+        multi_input_title: 'Input Info',
+        multi_chain_title: 'On-Chain Operations',
+        multi_url_label: 'Market URL',
+        multi_url_placeholder: 'e.g., https://polymarket.com/event/...',
+        multi_wallet_label: 'Wallet Address',
+        multi_wallet_placeholder: '0x...',
+        multi_btn_fetch: 'Get Sub-Markets',
+        multi_hint: 'Enter market URL and wallet address to get all trading markets for this user under this event',
+        multi_select_title: 'Select sub-markets user traded (multiple selection)',
+        multi_select_all: 'Select All',
+        multi_deselect_all: 'Deselect All',
+        multi_selected_count: '{n} selected',
+        multi_btn_back: 'Go Back',
+        multi_btn_analyze: 'Start Analysis',
+        multi_analyzing: 'Batch Analysis',
+        multi_progress_info: 'Analyzing market {current} / {total}: {name}',
+        multi_btn_cancel: 'Cancel',
+        multi_btn_reset: 'New Query',
+        multi_trades_count: '{n} trades',
+        
+        // Results
+        result_trade_count: 'Total Trades',
+        result_net_exposure: 'Net Exposure',
+        result_final_value: 'Final Value',
+        result_pnl: 'P&L',
+        result_settlement: 'Settlement',
+        result_unsettled: 'Unsettled',
+        result_unsettled_note: 'P&L will be calculated after settlement',
+        result_remaining_shares: 'Remaining Shares',
+        result_buy_cost: 'Buy Cost',
+        result_avg_price: 'Avg Price',
+        result_sell: 'Sell',
+        result_peak_exposure: 'Peak Exposure',
+        result_trade_n: 'Trade #{n}',
+        result_maker_taker: 'Maker/Taker Distribution',
+        result_exposure_summary: 'Final Exposure Summary',
+        result_type: 'Type',
+        result_dollar_exposure: '$ Exposure',
+        result_share_exposure: 'Share Exposure',
+        result_exposure: 'Exposure',
+        result_net: 'Net',
+        result_trade_report: 'Trade Report',
+        result_report: 'Trade Report',
+        result_expand: 'Expand',
+        result_collapse: 'Collapse',
+        result_no_data: 'No report data',
+        result_no_report: 'No report data',
+        market_status: 'Market Status',
+        
+        // Source stats
+        result_source_stats: 'Trade Source Distribution',
+        source_direct: 'Direct Trade',
+        source_neg_risk: 'Neg-Risk (Conversion)',
+        source_split: 'Split',
+        source_merge: 'Merge',
+        source_transfer: 'Transfer',
+        source_redeem: 'Redeem',
+        source_unknown: 'Unknown',
+        
+        // Error messages
+        error_no_market: 'Please enter market name',
+        error_no_url: 'Please enter market URL',
+        error_invalid_wallet: 'Please enter a valid wallet address (starts with 0x, 42 characters)',
+        error_invalid_url: 'Invalid Polymarket URL, please enter an event page link',
+        error_not_found: 'Event not found',
+        error_no_markets: 'No sub-markets under this event',
+        error_no_trades: 'No trades found for this user in this market',
+        error_task_not_found: 'Task not found',
+        error_fetch_failed: 'Failed to fetch market info',
+        error_query_cancelled: 'Query cancelled',
+    }
+};
+
+// 当前语言
+let currentLang = localStorage.getItem('lang') || 'zh';
+
+// 获取翻译文本
+function t(key, params = {}) {
+    let text = I18N[currentLang][key] || I18N['zh'][key] || key;
+    // 替换参数 {n}, {current}, {total}, {name}
+    Object.keys(params).forEach(k => {
+        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), params[k]);
+    });
+    return text;
+}
+
+// 切换语言
+function switchLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    applyTranslations();
+}
+
+// 切换语言（在中英文间切换）
+function toggleLang() {
+    const newLang = currentLang === 'zh' ? 'en' : 'zh';
+    switchLang(newLang);
+}
+
+// 应用翻译到页面
+function applyTranslations() {
+    // 更新所有带 data-i18n 属性的元素
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+    
+    // 更新所有带 data-i18n-placeholder 属性的输入框
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        el.placeholder = t(key);
+    });
+    
+    // 更新语言切换按钮文本
+    const langText = document.getElementById('langText');
+    const langTextMobile = document.getElementById('langTextMobile');
+    if (langText) langText.textContent = t('lang_toggle');
+    if (langTextMobile) langTextMobile.textContent = t('lang_toggle');
+    
+    // 更新 HTML lang 属性
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+}
+
+// 获取当前语言
+function getLang() {
+    return currentLang;
+}
+
+// 页面加载时应用翻译
+document.addEventListener('DOMContentLoaded', function() {
+    applyTranslations();
+});

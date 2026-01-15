@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台统计</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- 标题 -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-white">后台统计</h1>
+            <p class="text-gray-400 text-sm mt-1">数据更新时间: <span id="updateTime">加载中...</span></p>
+        </div>
+
+        <!-- 统计卡片 - 用户 -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">总用户量</div>
+                <div class="text-2xl font-bold text-white mt-1" id="totalUsers">-</div>
+                <div class="text-green-400 text-xs mt-1" id="userGrowth">-</div>
+            </div>
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">今日新用户</div>
+                <div class="text-2xl font-bold text-white mt-1" id="todayNewUsers">-</div>
+                <div class="text-gray-500 text-xs mt-1">活跃用户: <span id="todayActiveUsers">-</span></div>
+            </div>
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">总访问量</div>
+                <div class="text-2xl font-bold text-white mt-1" id="totalPageViews">-</div>
+                <div class="text-gray-500 text-xs mt-1">今日: <span id="todayPageViews">-</span></div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 - 查询 -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">总查询次数</div>
+                <div class="text-2xl font-bold text-white mt-1" id="totalQueries">-</div>
+                <div class="text-green-400 text-xs mt-1">成功率 <span id="successRate">-</span>%</div>
+            </div>
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">今日查询</div>
+                <div class="text-2xl font-bold text-white mt-1" id="todayQueries">-</div>
+                <div class="text-gray-500 text-xs mt-1" id="todayQueryDetail">-</div>
+            </div>
+            <div class="stat-card rounded-xl p-4">
+                <div class="text-gray-400 text-sm">平均耗时</div>
+                <div class="text-2xl font-bold text-white mt-1" id="avgDuration">-</div>
+                <div class="text-gray-500 text-xs mt-1" id="durationRange">-</div>
+            </div>
+        </div>
+
+        <!-- 两栏布局 -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- 热门市场 -->
+            <div class="glass rounded-xl p-5">
+                <h2 class="text-lg font-semibold text-white mb-4">热门市场 Top 10</h2>
+                <div class="space-y-3" id="topMarkets">
+                    <div class="text-gray-500 text-sm">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 查询分布 -->
+            <div class="glass rounded-xl p-5">
+                <h2 class="text-lg font-semibold text-white mb-4">查询分布</h2>
+                
+                <!-- 按类型 -->
+                <div class="mb-6">
+                    <div class="text-gray-400 text-sm mb-2">按查询类型</div>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">快速查询</span>
+                                <span class="text-gray-400" id="simplePercent">-</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full">
+                                <div class="h-2 bg-purple-500 rounded-full" id="simpleBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">多选项市场</span>
+                                <span class="text-gray-400" id="multiPercent">-</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full">
+                                <div class="h-2 bg-blue-500 rounded-full" id="multiBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 按状态 -->
+                <div>
+                    <div class="text-gray-400 text-sm mb-2">按查询状态</div>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">成功</span>
+                                <span class="text-gray-400" id="successStat">-</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full">
+                                <div class="h-2 bg-green-500 rounded-full" id="successBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">失败</span>
+                                <span class="text-gray-400" id="errorStat">-</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full">
+                                <div class="h-2 bg-red-500 rounded-full" id="errorBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">取消</span>
+                                <span class="text-gray-400" id="cancelledStat">-</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full">
+                                <div class="h-2 bg-yellow-500 rounded-full" id="cancelledBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近查询记录 -->
+        <div class="glass rounded-xl p-5 mt-6">
+            <h2 class="text-lg font-semibold text-white mb-4">最近查询记录</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700">
+                            <th class="text-left py-2 px-2">时间</th>
+                            <th class="text-left py-2 px-2">类型</th>
+                            <th class="text-left py-2 px-2">市场</th>
+                            <th class="text-left py-2 px-2">钱包地址</th>
+                            <th class="text-left py-2 px-2">状态</th>
+                            <th class="text-left py-2 px-2">耗时</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300" id="queryTable">
+                        <tr><td colspan="6" class="py-4 text-center text-gray-500">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 分页 -->
+            <div class="flex justify-between items-center mt-4 text-sm">
+                <span class="text-gray-400" id="pageInfo">-</span>
+                <div class="flex gap-2">
+                    <button onclick="prevPage()" id="prevBtn" class="px-3 py-1 rounded bg-gray-700 text-gray-400 hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50">上一页</button>
+                    <button onclick="nextPage()" id="nextBtn" class="px-3 py-1 rounded bg-purple-600 text-white hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50">下一页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="text-center text-gray-500 text-sm mt-8">
+            仅管理员可见
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // 获取当前路径作为 API 基础路径
+        const basePath = window.location.pathname;
+        
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const resp = await fetch(`${basePath}/api/stats`);
+                const data = await resp.json();
+                
+                // 更新时间
+                document.getElementById('updateTime').textContent = data.update_time;
+                
+                // 用户统计
+                document.getElementById('totalUsers').textContent = data.total_users.toLocaleString();
+                const growth = data.today_new_users;
+                document.getElementById('userGrowth').textContent = growth > 0 ? `↑ ${growth} 较昨日` : '暂无增长';
+                document.getElementById('todayNewUsers').textContent = data.today_new_users;
+                document.getElementById('todayActiveUsers').textContent = data.today_active_users;
+                
+                // 访问统计
+                document.getElementById('totalPageViews').textContent = data.total_page_views.toLocaleString();
+                document.getElementById('todayPageViews').textContent = data.today_page_views;
+                
+                // 查询统计
+                document.getElementById('totalQueries').textContent = data.total_queries.toLocaleString();
+                document.getElementById('successRate').textContent = data.query_success_rate;
+                document.getElementById('todayQueries').textContent = data.today_queries.total;
+                document.getElementById('todayQueryDetail').textContent = 
+                    `成功 ${data.today_queries.success} / 失败 ${data.today_queries.error} / 取消 ${data.today_queries.cancelled}`;
+                
+                // 耗时统计
+                const dur = data.avg_duration;
+                document.getElementById('avgDuration').textContent = dur.avg > 0 ? `${dur.avg}s` : '-';
+                document.getElementById('durationRange').textContent = dur.avg > 0 ? `最快 ${dur.min}s / 最慢 ${dur.max}s` : '-';
+                
+                // 查询类型分布
+                const typeDist = data.query_type_dist;
+                document.getElementById('simplePercent').textContent = `${typeDist.simple}%`;
+                document.getElementById('simpleBar').style.width = `${typeDist.simple}%`;
+                document.getElementById('multiPercent').textContent = `${typeDist.multi}%`;
+                document.getElementById('multiBar').style.width = `${typeDist.multi}%`;
+                
+                // 查询状态分布
+                const statusDist = data.query_status_dist;
+                document.getElementById('successStat').textContent = `${statusDist.success_count} (${statusDist.success}%)`;
+                document.getElementById('successBar').style.width = `${statusDist.success}%`;
+                document.getElementById('errorStat').textContent = `${statusDist.error_count} (${statusDist.error}%)`;
+                document.getElementById('errorBar').style.width = `${statusDist.error}%`;
+                document.getElementById('cancelledStat').textContent = `${statusDist.cancelled_count} (${statusDist.cancelled}%)`;
+                document.getElementById('cancelledBar').style.width = `${statusDist.cancelled}%`;
+                
+                // 热门市场
+                renderTopMarkets(data.top_markets);
+                
+            } catch (e) {
+                console.error('加载统计数据失败:', e);
+            }
+        }
+
+        // 渲染热门市场
+        function renderTopMarkets(markets) {
+            const container = document.getElementById('topMarkets');
+            if (!markets || markets.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-sm">暂无数据</div>';
+                return;
+            }
+            
+            container.innerHTML = markets.map(m => `
+                <div class="flex justify-between items-center">
+                    <a href="${m.url || '#'}" target="_blank" class="text-gray-300 text-sm truncate mr-2 hover:text-purple-400 hover:underline">${m.name}</a>
+                    <span class="text-purple-400 text-sm font-medium flex-shrink-0">${m.count} 次</span>
+                </div>
+            `).join('');
+        }
+
+        // 加载查询记录
+        async function loadQueries(page = 1) {
+            try {
+                const resp = await fetch(`${basePath}/api/queries?page=${page}&limit=10`);
+                const data = await resp.json();
+                
+                currentPage = data.page;
+                totalPages = data.total_pages;
+                
+                document.getElementById('pageInfo').textContent = 
+                    `显示 ${(page-1)*10+1}-${Math.min(page*10, data.total)} / 共 ${data.total} 条`;
+                
+                document.getElementById('prevBtn').disabled = page <= 1;
+                document.getElementById('nextBtn').disabled = page >= totalPages;
+                
+                renderQueryTable(data.queries);
+                
+            } catch (e) {
+                console.error('加载查询记录失败:', e);
+            }
+        }
+
+        // 渲染查询表格
+        function renderQueryTable(queries) {
+            const tbody = document.getElementById('queryTable');
+            if (!queries || queries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = queries.map(q => {
+                const time = new Date(q.timestamp * 1000).toLocaleString('zh-CN', {
+                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+                const type = q.query_type === 'simple' ? '快速' : '多选项';
+                const statusClass = q.status === 'success' ? 'text-green-400' : 
+                                   q.status === 'error' ? 'text-red-400' : 'text-yellow-400';
+                const statusText = q.status === 'success' ? '成功' : 
+                                  q.status === 'error' ? '失败' : '取消';
+                const duration = q.duration ? `${q.duration}s` : '-';
+                const wallet = q.wallet_address ? `${q.wallet_address.slice(0,6)}...${q.wallet_address.slice(-4)}` : '-';
+                const marketName = q.market_name || '-';
+                const marketUrl = q.market_url;
+                
+                return `
+                    <tr class="border-b border-gray-800">
+                        <td class="py-2 px-2 text-gray-400">${time}</td>
+                        <td class="py-2 px-2">${type}</td>
+                        <td class="py-2 px-2">
+                            ${marketUrl ? 
+                                `<a href="${marketUrl}" target="_blank" class="truncate max-w-[180px] hover:text-purple-400 hover:underline block" title="${marketName}">${marketName}</a>` :
+                                `<span class="truncate max-w-[180px] block" title="${marketName}">${marketName}</span>`
+                            }
+                        </td>
+                        <td class="py-2 px-2">
+                            <div class="flex items-center gap-1">
+                                <span class="font-mono text-xs">${wallet}</span>
+                                ${q.wallet_address ? `
+                                    <button onclick="copyText('${q.wallet_address}')" class="text-gray-500 hover:text-purple-400 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="py-2 px-2"><span class="${statusClass}">${statusText}</span></td>
+                        <td class="py-2 px-2">${duration}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 分页
+        function prevPage() {
+            if (currentPage > 1) loadQueries(currentPage - 1);
+        }
+        function nextPage() {
+            if (currentPage < totalPages) loadQueries(currentPage + 1);
+        }
+
+        // 复制文本
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm';
+                toast.textContent = '已复制';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 1500);
+            });
+        }
+
+        // 初始化
+        loadStats();
+        loadQueries();
+        
+        // 每30秒自动刷新
+        setInterval(() => {
+            loadStats();
+            loadQueries(currentPage);
+        }, 30000);
+    </script>
+</body>
+</html>
