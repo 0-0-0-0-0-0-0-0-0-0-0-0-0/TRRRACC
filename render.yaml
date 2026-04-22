@@ -1,12 +1,15 @@
 services:
   - type: web
-    name: polymarket-trade-tracker
+    name: trrracc
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn app:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_DEBUG
         value: false
       - key: ADMIN_PATH
         generateValue: true
-    plan: free
+      - key: MPLBACKEND
+        value: Agg
+      - key: MPLCONFIGDIR
+        value: /tmp/matplotlib
