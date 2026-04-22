@@ -2,7 +2,7 @@ services:
   - type: web
     name: trrracc
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib python -c "import matplotlib.pyplot"
     startCommand: gunicorn app:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_DEBUG
