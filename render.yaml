@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: polymarket-trade-tracker
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_DEBUG
+        value: false
+      - key: ADMIN_PATH
+        generateValue: true
+    plan: free
